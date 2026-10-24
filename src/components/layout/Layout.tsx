@@ -31,8 +31,12 @@ export function Layout({ appData }: LayoutProps) {
           reservations={appData.reservations}
           isSyncing={appData.isSyncing}
           syncStatus={appData.syncStatus}
+          /*
           googleSheetsEnabled={Boolean(appData.settings.googleSheets?.enabled && appData.settings.googleSheets?.webAppUrl)}
           onSyncClick={() => appData.pullFromGoogleSheets(true)}
+          */
+          supabaseEnabled={Boolean(appData.settings.supabase?.enabled)}
+          onSyncClick={() => appData.pullFromSupabase(true)}
         />
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 max-w-[1600px] mx-auto">

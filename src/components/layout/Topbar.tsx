@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Bell, Search, ChevronDown, LogOut, User, Settings, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Menu, Bell, Search, ChevronDown, LogOut, User, Settings, FileSpreadsheet, RefreshCw, Database } from 'lucide-react';
 import { cn, timeAgo, formatDate } from '../../lib/utils';
 import { Notification, Room, Guest, Reservation } from '../../types';
 
@@ -14,7 +14,11 @@ interface TopbarProps {
   reservations: Reservation[];
   isSyncing?: boolean;
   syncStatus?: 'idle' | 'syncing' | 'synced' | 'error';
+  /*
   googleSheetsEnabled?: boolean;
+  */
+  supabaseEnabled?: boolean;
+  googleSheetsEnabled?: boolean; // Kept for backwards compatibility
   onSyncClick?: () => void;
 }
 
@@ -27,8 +31,9 @@ const NOTIF_ICONS: Record<string, string> = {
 
 export function Topbar({
   onMobileMenuOpen, notifications, onMarkAllRead, onMarkRead, rooms, guests, reservations,
-  isSyncing, syncStatus, googleSheetsEnabled, onSyncClick
+  isSyncing, syncStatus, googleSheetsEnabled, supabaseEnabled, onSyncClick
 }: TopbarProps) {
+  const isDbEnabled = supabaseEnabled ?? googleSheetsEnabled;
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -113,7 +118,8 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        {/* Google Sheets Live Sync Button */}
+        {/*
+        {/ * Google Sheets Live Sync Button * /}
         <button
           onClick={googleSheetsEnabled ? onSyncClick : () => navigate('/settings')}
           className={cn(
@@ -131,6 +137,28 @@ export function Topbar({
           )}
           <span className="hidden md:inline">
             {isSyncing ? 'Syncing...' : googleSheetsEnabled ? 'Google Sheet Synced' : 'Connect Sheet'}
+          </span>
+        </button>
+        */}
+
+        {/* Supabase PostgreSQL Live Database Sync Button */}
+        <button
+          onClick={isDbEnabled ? onSyncClick : () => navigate('/settings')}
+          className={cn(
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
+            isDbEnabled
+              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shadow-xs'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'
+          )}
+          title={isDbEnabled ? 'Supabase Live Database (Click to pull/refresh data)' : 'Configure Supabase Database'}
+        >
+          {isSyncing ? (
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+          ) : (
+            <Database className={cn('w-3.5 h-3.5', isDbEnabled ? 'text-emerald-600' : 'text-slate-400')} />
+          )}
+          <span className="hidden md:inline">
+            {isSyncing ? 'Syncing...' : isDbEnabled ? 'Supabase Synced' : 'Connect Supabase'}
           </span>
         </button>
 

@@ -6,9 +6,14 @@ import {
   INITIAL_ROOMS, INITIAL_GUESTS, INITIAL_RESERVATIONS, INITIAL_PAYMENTS,
   INITIAL_STAFF, INITIAL_SETTINGS, INITIAL_NOTIFICATIONS
 } from '../data/mockData';
+/*
 import {
   fetchGoogleSheetData, syncAllToGoogleSheet, syncEntityToGoogleSheet
 } from '../services/googleSheets';
+*/
+import {
+  fetchSupabaseData, syncAllToSupabase, syncEntityToSupabase
+} from '../services/supabase';
 import { toast } from 'sonner';
 
 const STORAGE_KEYS = {
@@ -172,6 +177,7 @@ export function useStaff() {
 export function useSettings() {
   const [settings, setSettings] = useState<HotelSettings>(() => {
     const loaded = loadFromStorage(STORAGE_KEYS.settings, INITIAL_SETTINGS);
+    /*
     if (!loaded.googleSheets?.webAppUrl && INITIAL_SETTINGS.googleSheets?.webAppUrl) {
       const updated: HotelSettings = {
         ...loaded,
@@ -183,6 +189,16 @@ export function useSettings() {
           autoSync: loaded.googleSheets?.autoSync ?? true,
           lastSyncedAt: loaded.googleSheets?.lastSyncedAt ?? '',
         }
+      };
+      saveToStorage(STORAGE_KEYS.settings, updated);
+      return updated;
+    }
+    */
+    // Supabase auto-initialization/migration
+    if (!loaded.supabase || !loaded.supabase.url) {
+      const updated: HotelSettings = {
+        ...loaded,
+        supabase: INITIAL_SETTINGS.supabase,
       };
       saveToStorage(STORAGE_KEYS.settings, updated);
       return updated;
@@ -268,6 +284,7 @@ export function useAppData() {
 
   const initialLoadedRef = useRef(false);
 
+  /*
   // Helper to trigger background sync if Google Sheets is enabled
   const triggerAutoSync = useCallback((entity: 'rooms' | 'guests' | 'reservations' | 'payments' | 'staff' | 'settings', data: unknown) => {
     if (settings.googleSheets?.enabled && settings.googleSheets?.autoSync && settings.googleSheets?.webAppUrl) {
@@ -278,8 +295,20 @@ export function useAppData() {
       });
     }
   }, [settings.googleSheets]);
+  */
 
-  // Intercept mutations to auto-sync to Google Sheets
+  // Helper to trigger background sync to Supabase database
+  const triggerAutoSync = useCallback((entity: 'rooms' | 'guests' | 'reservations' | 'payments' | 'staff' | 'settings', data: unknown) => {
+    if (settings.supabase?.enabled && settings.supabase?.autoSync) {
+      syncEntityToSupabase(entity, data, settings.supabase.url, settings.supabase.anonKey).then(res => {
+        if (res.status === 'success') {
+          setSyncStatus('synced');
+        }
+      });
+    }
+  }, [settings.supabase]);
+
+  // Intercept mutations to auto-sync to Supabase
   const addRoom = useCallback((room: Room) => {
     rawAddRoom(room);
     triggerAutoSync('rooms', [...rooms, room]);
@@ -350,6 +379,7 @@ export function useAppData() {
     triggerAutoSync('staff', staff.filter(s => s.id !== id));
   }, [rawDeleteStaff, staff, triggerAutoSync]);
 
+  /*
   // Pull all data from Google Sheets into local state
   const pullFromGoogleSheets = useCallback(async (notify = true) => {
     if (!settings.googleSheets?.webAppUrl) {
@@ -450,6 +480,103 @@ export function useAppData() {
       pullFromGoogleSheets(false);
     }
   }, [settings.googleSheets?.enabled, settings.googleSheets?.webAppUrl, pullFromGoogleSheets]);
+  */
+
+  // Pull all data from Supabase database into local state
+  const pullFromSupabase = useCallback(async (notify = true) => {
+    setIsSyncing(true);
+    setSyncStatus('syncing');
+    setSyncError(null);
+
+    try {
+      const response = await fetchSupabaseData(settings.supabase?.url, settings.supabase?.anonKey);
+      if (response.status === 'success' && response.data) {
+        const { rooms: r, guests: g, reservations: res, payments: p, staff: s } = response.data;
+        if (r && Array.isArray(r) && r.length > 0) saveRooms(r);
+        if (g && Array.isArray(g) && g.length > 0) saveGuests(g);
+        if (res && Array.isArray(res) && res.length > 0) saveReservations(res);
+        if (p && Array.isArray(p) && p.length > 0) savePayments(p);
+        if (s && Array.isArray(s) && s.length > 0) saveStaff(s);
+
+        const now = new Date().toISOString();
+        if (settings.supabase) {
+          updateSettings({
+            ...settings,
+            supabase: {
+              ...settings.supabase,
+              lastSyncedAt: now,
+            }
+          });
+        }
+
+        setSyncStatus('synced');
+        if (notify) toast.success('Successfully imported data from Supabase Database!');
+        return true;
+      } else {
+        throw new Error(response.message || 'No data received from Supabase');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setSyncStatus('error');
+      setSyncError(message);
+      if (notify) toast.error(`Supabase sync failed: ${message}`);
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [settings, saveRooms, saveGuests, saveReservations, savePayments, saveStaff, updateSettings]);
+
+  // Push all local data to Supabase database
+  const pushToSupabase = useCallback(async (notify = true) => {
+    setIsSyncing(true);
+    setSyncStatus('syncing');
+    setSyncError(null);
+
+    try {
+      await syncAllToSupabase(
+        { rooms, guests, reservations, payments, staff, settings },
+        settings.supabase?.url,
+        settings.supabase?.anonKey
+      );
+
+      const now = new Date().toISOString();
+      if (settings.supabase) {
+        updateSettings({
+          ...settings,
+          supabase: {
+            ...settings.supabase,
+            lastSyncedAt: now,
+          }
+        });
+      }
+
+      setSyncStatus('synced');
+      if (notify) toast.success('Successfully exported all data to Supabase!');
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setSyncStatus('error');
+      setSyncError(message);
+      if (notify) toast.error(`Supabase export failed: ${message}`);
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [settings, rooms, guests, reservations, payments, staff, updateSettings]);
+
+  // Backward compatibility alias for Google Sheets methods (delegating to Supabase)
+  const pullFromGoogleSheets = pullFromSupabase;
+  const pushToGoogleSheets = pushToSupabase;
+
+  // Initial auto-pull on mount if Supabase is enabled
+  useEffect(() => {
+    if (initialLoadedRef.current) return;
+    initialLoadedRef.current = true;
+
+    if (settings.supabase?.enabled) {
+      pullFromSupabase(false);
+    }
+  }, [settings.supabase?.enabled, pullFromSupabase]);
 
   const metrics = useDashboardMetrics(rooms, reservations, payments);
 
@@ -462,10 +589,13 @@ export function useAppData() {
     settings, updateSettings,
     notifications, markAllRead, markRead, addNotification,
     metrics,
-    // Google Sheets Sync Properties & Methods
+    // Database Sync Properties & Methods
     isSyncing,
     syncStatus,
     syncError,
+    pullFromSupabase,
+    pushToSupabase,
+    // Legacy Google Sheets method aliases kept for backwards compatibility
     pullFromGoogleSheets,
     pushToGoogleSheets,
   };

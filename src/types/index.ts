@@ -108,10 +108,25 @@ export interface HotelSettings {
     theme: 'light' | 'dark';
     sidebarCollapsed: boolean;
   };
+  /*
   googleSheets?: {
     enabled: boolean;
     webAppUrl: string;
     spreadsheetId?: string;
+    autoSync: boolean;
+    lastSyncedAt?: string;
+  };
+  */
+  // Supabase Database Integration Configuration
+  supabase?: {
+    enabled: boolean;
+    url: string;
+    anonKey?: string;
+    connectionString?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    user?: string;
     autoSync: boolean;
     lastSyncedAt?: string;
   };

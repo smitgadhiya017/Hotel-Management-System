@@ -129,10 +129,24 @@ export const INITIAL_SETTINGS: HotelSettings = {
   invoiceFooter: 'Thank you for choosing The GrandStay Palace Hotel. Atithi Devo Bhava!',
   notifications: { newReservation: true, checkIn: true, checkOut: true, payment: true },
   appearance: { theme: 'light', sidebarCollapsed: false },
+  /*
   googleSheets: {
     enabled: true,
     webAppUrl: 'https://script.google.com/macros/s/AKfycbyicYFflyZ2pmihY4cqGz339zoa1zfXVGYqm775bSeQ106p0n_E4_2CWG4v_tzZ8VHBYg/exec',
     spreadsheetId: '1lC114sOdG_OCAaTQi6sWCkMonWINXdEpkmnfYfqC8tw',
+    autoSync: true,
+    lastSyncedAt: '',
+  },
+  */
+  supabase: {
+    enabled: true,
+    url: 'https://ykrwarvqrpxndkgyswiv.supabase.co',
+    anonKey: '',
+    connectionString: 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres',
+    host: 'db.ykrwarvqrpxndkgyswiv.supabase.co',
+    port: 5432,
+    database: 'postgres',
+    user: 'postgres',
     autoSync: true,
     lastSyncedAt: '',
   },
