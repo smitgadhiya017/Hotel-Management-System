@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import pkg from 'pg';
 import crypto from 'crypto';
 const { Client } = pkg;
@@ -11,10 +12,14 @@ function hashPassword(password) {
   return crypto.pbkdf2Sync(password, PASSWORD_SALT, 10000, 64, 'sha512').toString('hex');
 }
 
-const connectionString = 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres';
+const connectionString = process.env.DATABASE_URL;
 
 async function setupDatabase() {
-  console.log('Connecting to Supabase PostgreSQL at db.ykrwarvqrpxndkgyswiv.supabase.co...');
+  if (!connectionString) {
+    console.error('❌ Error: DATABASE_URL is not defined. Please set it in your .env file or environment.');
+    process.exit(1);
+  }
+  console.log('Connecting to Supabase PostgreSQL database...');
   const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
 
   try {

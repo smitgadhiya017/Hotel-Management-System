@@ -7,7 +7,7 @@ export const SUPABASE_HOST = 'db.ykrwarvqrpxndkgyswiv.supabase.co';
 export const SUPABASE_PORT = 5432;
 export const SUPABASE_DATABASE = 'postgres';
 export const SUPABASE_USER = 'postgres';
-export const SUPABASE_CONNECTION_STRING = 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres';
+export const SUPABASE_CONNECTION_STRING = '';
 
 export interface SupabaseSyncPayload {
   rooms?: Room[];

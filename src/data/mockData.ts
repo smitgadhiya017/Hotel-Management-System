@@ -142,7 +142,7 @@ export const INITIAL_SETTINGS: HotelSettings = {
     enabled: true,
     url: 'https://ykrwarvqrpxndkgyswiv.supabase.co',
     anonKey: '',
-    connectionString: 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres',
+    connectionString: '',
     host: 'db.ykrwarvqrpxndkgyswiv.supabase.co',
     port: 5432,
     database: 'postgres',

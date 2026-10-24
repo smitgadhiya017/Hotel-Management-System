@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createRequire } from 'module';
 import path from 'path';
@@ -13,19 +14,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ── Database connection (uses env var in production, with IPv4 pooler fallback for Render) ──
+// ── Database connection (uses DATABASE_URL environment variable) ──
 function getResolvedConnectionString() {
   let connStr = (process.env.DATABASE_URL || '').trim();
   if (!connStr) {
-    return 'postgresql://postgres.ykrwarvqrpxndkgyswiv:Smitgadhiya@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
+    console.warn('⚠️  DATABASE_URL environment variable is not defined. Please set DATABASE_URL in your environment or .env file.');
+    return '';
   }
-  // Render free/standard web services do not have outbound IPv6 routing.
-  // Newer Supabase projects resolve db.[ref].supabase.co strictly to IPv6, causing 'connect ENETUNREACH'.
-  // Automatically rewrite to the Supabase IPv4 connection pooler on port 6543 (ap-southeast-2).
-  if (connStr.includes('db.ykrwarvqrpxndkgyswiv.supabase.co')) {
+  // Automatically rewrite IPv6 direct connection to IPv4 pooler if applicable
+  const dbMatch = connStr.match(/@db\.([a-z0-9]+)\.supabase\.co/);
+  if (dbMatch && dbMatch[1]) {
+    const projectRef = dbMatch[1];
     connStr = connStr
-      .replace('db.ykrwarvqrpxndkgyswiv.supabase.co:5432', 'aws-0-ap-southeast-2.pooler.supabase.com:6543')
-      .replace('postgres:', 'postgres.ykrwarvqrpxndkgyswiv:');
+      .replace(`db.${projectRef}.supabase.co:5432`, 'aws-0-ap-southeast-2.pooler.supabase.com:6543')
+      .replace('postgres:', `postgres.${projectRef}:`);
   }
   return connStr;
 }

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import pkg from 'pg'
@@ -5,7 +6,7 @@ import crypto from 'crypto'
 const { Pool } = pkg
 
 const pool = new Pool({
-  connectionString: 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres',
+  connectionString: process.env.DATABASE_URL || '',
   ssl: { rejectUnauthorized: false }
 })
 
