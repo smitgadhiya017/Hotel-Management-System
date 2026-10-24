@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Room, Guest, Reservation, Payment, StaffMember, HotelSettings } from '../types';
+import { API_BASE_URL } from '../config/api';
 
 export const SUPABASE_URL = 'https://ykrwarvqrpxndkgyswiv.supabase.co';
 export const SUPABASE_HOST = 'db.ykrwarvqrpxndkgyswiv.supabase.co';
@@ -81,7 +82,7 @@ export async function fetchSupabaseData(
   }
 
   // Fallback to local dev API connected directly to Supabase Postgres
-  const res = await fetch('/api/supabase/all');
+  const res = await fetch(`${API_BASE_URL}/api/supabase/all`);
   if (!res.ok) {
     throw new Error(`Supabase query failed with HTTP status ${res.status}`);
   }
@@ -136,7 +137,7 @@ export async function syncAllToSupabase(
   }
 
   // Fallback to local dev API connected directly to Supabase Postgres
-  const res = await fetch('/api/supabase/syncAll', {
+  const res = await fetch(`${API_BASE_URL}/api/supabase/syncAll`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -180,7 +181,7 @@ export async function syncEntityToSupabase(
   }
 
   try {
-    const res = await fetch(`/api/supabase/entity`, {
+    const res = await fetch(`${API_BASE_URL}/api/supabase/entity`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entity, data }),
@@ -224,7 +225,7 @@ export async function testSupabaseConnection(
     }
 
     // Direct endpoint test
-    const response = await fetch('/api/supabase/status');
+    const response = await fetch(`${API_BASE_URL}/api/supabase/status`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
