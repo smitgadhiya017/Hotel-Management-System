@@ -108,6 +108,13 @@ export interface HotelSettings {
     theme: 'light' | 'dark';
     sidebarCollapsed: boolean;
   };
+  googleSheets?: {
+    enabled: boolean;
+    webAppUrl: string;
+    spreadsheetId?: string;
+    autoSync: boolean;
+    lastSyncedAt?: string;
+  };
 }
 
 export interface Notification {

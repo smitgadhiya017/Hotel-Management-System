@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Plus, Eye, Pencil, Trash2, Users } from 'lucide-react';
-import type { AppData } from '../hooks/useAppData';
+import { AppData } from '../hooks/useAppData';
 import { Guest, GuestStatus } from '../types';
 import {
   PageHeader, StatusBadge, SearchInput, SelectFilter, ConfirmDialog,
@@ -11,9 +11,9 @@ import { formatCurrency, formatDate, generateId } from '../lib/utils';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 10;
-const COUNTRIES = ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'United States', 'Canada', 'Australia', 'UAE', 'India', 'Japan', 'Mexico', 'Poland', 'Netherlands', 'Sweden', 'Other'];
+const COUNTRIES = ['India', 'United States', 'United Kingdom', 'UAE', 'Singapore', 'Australia', 'Germany', 'France', 'Canada', 'Other'];
 
-const initForm = { firstName: '', lastName: '', email: '', phone: '', country: 'United States', address: '', notes: '', status: 'Active' as GuestStatus };
+const initForm = { firstName: '', lastName: '', email: '', phone: '', country: 'India', address: '', notes: '', status: 'Active' as GuestStatus };
 
 export function Guests() {
   const { guests, reservations, addGuest, updateGuest, deleteGuest } = useOutletContext<AppData>();

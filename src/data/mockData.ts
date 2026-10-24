@@ -129,6 +129,13 @@ export const INITIAL_SETTINGS: HotelSettings = {
   invoiceFooter: 'Thank you for choosing The GrandStay Palace Hotel. Atithi Devo Bhava!',
   notifications: { newReservation: true, checkIn: true, checkOut: true, payment: true },
   appearance: { theme: 'light', sidebarCollapsed: false },
+  googleSheets: {
+    enabled: true,
+    webAppUrl: '',
+    spreadsheetId: '1lC114sOdG_OCAaTQi6sWCkMonWINXdEpkmnfYfqC8tw',
+    autoSync: true,
+    lastSyncedAt: '',
+  },
 };
 
 export const MONTHLY_REVENUE_DATA = [
