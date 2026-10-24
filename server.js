@@ -166,7 +166,7 @@ app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, role } = req.body || {};
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanName = (name || '').trim();
-    const cleanRole = (role || 'Staff').trim();
+    const cleanRole = (role || 'Administrator').trim();
 
     if (!cleanName || !cleanEmail || !password) {
       return res.status(400).json({ status: 'error', message: 'Name, email, and password are required' });

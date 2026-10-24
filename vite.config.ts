@@ -164,7 +164,7 @@ function supabaseDevPlugin(): Plugin {
                   const { name, email, password, role } = parsed;
                   const cleanEmail = (email || '').trim().toLowerCase();
                   const cleanName = (name || '').trim();
-                  const cleanRole = (role || 'Staff').trim();
+                  const cleanRole = (role || 'Administrator').trim();
                   if (!cleanName || !cleanEmail || !password) {
                     res.statusCode = 400;
                     res.end(JSON.stringify({ status: 'error', message: 'Name, email, and password are required' }));

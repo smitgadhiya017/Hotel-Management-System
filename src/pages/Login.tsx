@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Crown, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck,
+  Crown, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck, User, UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Login: React.FC = () => {
-  const { login, isAuthenticated, quickLogin } = useAuth();
+  const { login, register, isAuthenticated, quickLogin } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
   const from      = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
@@ -16,12 +16,21 @@ export const Login: React.FC = () => {
     if (isAuthenticated) navigate(from, { replace: true });
   }, [isAuthenticated, navigate, from]);
 
+  const [isSignUp, setIsSignUp]         = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState('');
+
+  // Sign In fields
   const [email, setEmail]               = useState('admin@grandstay.in');
   const [password, setPassword]         = useState('admin123');
   const [rememberMe, setRememberMe]     = useState(true);
+
+  // Sign Up fields
+  const [name, setName]                 = useState('');
+  const [signUpEmail, setSignUpEmail]   = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +48,33 @@ export const Login: React.FC = () => {
     } else {
       setErrorMsg(res.message || 'Invalid credentials. Please try again.');
       toast.error('Sign In Failed', { description: res.message });
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!name.trim() || !signUpEmail.trim() || !signUpPassword) {
+      setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+    if (signUpPassword.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+    if (signUpPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    const res = await register(name.trim(), signUpEmail.trim(), signUpPassword, 'Administrator');
+    setLoading(false);
+    if (res.success) {
+      toast.success(res.message || 'Administrator account created successfully!');
+      navigate(from, { replace: true });
+    } else {
+      setErrorMsg(res.message || 'Registration failed. Please try again.');
+      toast.error('Sign Up Failed', { description: res.message });
     }
   };
 
@@ -75,11 +111,19 @@ export const Login: React.FC = () => {
           {/* Card header */}
           <div className="flex items-center gap-2 mb-6">
             <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-amber-600" />
+              {isSignUp ? (
+                <UserPlus className="w-4 h-4 text-amber-600" />
+              ) : (
+                <ShieldCheck className="w-4 h-4 text-amber-600" />
+              )}
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">Administrator Sign In</h2>
-              <p className="text-xs text-slate-400">Restricted to authorized admin only</p>
+              <h2 className="text-base font-bold text-slate-800">
+                {isSignUp ? 'Create Admin Account' : 'Administrator Sign In'}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {isSignUp ? 'Register authorized administrator credentials' : 'Restricted to authorized admin only'}
+              </p>
             </div>
           </div>
 
@@ -91,116 +135,251 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSignIn} className="space-y-4">
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@grandstay.in"
-                  required
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Password
+          {isSignUp ? (
+            /* ── Sign Up Form ─────────────────────── */
+            <form onSubmit={handleSignUp} className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Full Name
                 </label>
-                <button
-                  type="button"
-                  onClick={() => toast.info('Default credentials: admin@grandstay.in / admin123')}
-                  className="text-xs text-[#172554] hover:text-blue-700 font-medium transition-colors"
-                >
-                  Forgot password?
-                </button>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g. Vikramaditya Singh"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={signUpEmail}
+                    onChange={e => setSignUpEmail(e.target.value)}
+                    placeholder="admin@grandstay.in"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Password (min. 6 characters)
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={signUpPassword}
+                    onChange={e => setSignUpPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#172554] hover:bg-[#1e3a8a] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-900/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    Create Administrator Account
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* ── Sign In Form ─────────────────────── */
+            <form onSubmit={handleSignIn} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="admin@grandstay.in"
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => toast.info('Default credentials: admin@grandstay.in / admin123')}
+                    className="text-xs text-[#172554] hover:text-blue-700 font-medium transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember me */}
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded accent-[#172554] border-slate-300"
                 />
+                <span className="text-xs text-slate-600">Keep me signed in</span>
+              </label>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#172554] hover:bg-[#1e3a8a] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-900/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Verifying credentials…
+                  </>
+                ) : (
+                  <>
+                    Sign In to Dashboard
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Quick login option (only on Sign In view) */}
+          {!isSignUp && (
+            <>
+              {/* Divider */}
+              <div className="relative flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-medium">or</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              {/* Quick login */}
+              <button
+                type="button"
+                onClick={handleQuickLogin}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-all group text-left cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-200/60 flex items-center justify-center text-base flex-shrink-0">
+                  👑
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-800">Quick Admin Login</p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">admin@grandstay.in · admin123</p>
+                </div>
+                <span className="text-xs font-semibold text-amber-700 group-hover:translate-x-0.5 transition-transform flex-shrink-0">
+                  Go →
+                </span>
+              </button>
+            </>
+          )}
+
+          {/* Toggle between Sign In and Sign Up */}
+          <div className="text-center mt-5 pt-4 border-t border-slate-100">
+            {isSignUp ? (
+              <p className="text-xs text-slate-500">
+                Already have an administrator account?{' '}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  onClick={() => { setIsSignUp(false); setErrorMsg(''); }}
+                  className="text-[#172554] hover:text-blue-700 font-semibold transition-colors cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  Sign In
                 </button>
-              </div>
-            </div>
-
-            {/* Remember me */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded accent-[#172554] border-slate-300"
-              />
-              <span className="text-xs text-slate-600">Keep me signed in</span>
-            </label>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#172554] hover:bg-[#1e3a8a] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-900/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed group cursor-pointer"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Verifying credentials…
-                </>
-              ) : (
-                <>
-                  Sign In to Dashboard
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or</span>
-            <div className="flex-1 h-px bg-slate-200" />
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Don't have an administrator account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(true); setErrorMsg(''); }}
+                  className="text-[#172554] hover:text-blue-700 font-semibold transition-colors cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </p>
+            )}
           </div>
-
-          {/* Quick login */}
-          <button
-            type="button"
-            onClick={handleQuickLogin}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-all group text-left cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-lg bg-amber-200/60 flex items-center justify-center text-base flex-shrink-0">
-              👑
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-bold text-slate-800">Quick Admin Login</p>
-              <p className="text-[11px] text-slate-500 font-mono mt-0.5">admin@grandstay.in · admin123</p>
-            </div>
-            <span className="text-xs font-semibold text-amber-700 group-hover:translate-x-0.5 transition-transform flex-shrink-0">
-              Go →
-            </span>
-          </button>
         </div>
 
         {/* Footer note */}

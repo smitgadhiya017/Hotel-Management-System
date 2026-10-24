@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     name: string,
     email: string,
     password: string,
-    role = 'Staff'
+    role = 'Administrator'
   ): Promise<{ success: boolean; message?: string }> => {
     setIsLoading(true);
     const cleanEmail = email.trim().toLowerCase();
