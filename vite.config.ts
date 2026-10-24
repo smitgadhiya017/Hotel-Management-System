@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import pkg from 'pg'
+import crypto from 'crypto'
 const { Pool } = pkg
 
 const pool = new Pool({
@@ -8,16 +9,57 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 })
 
+const PASSWORD_SALT = 'grandstay_salt_2026';
+function hashPassword(password: string): string {
+  return crypto.pbkdf2Sync(password, PASSWORD_SALT, 10000, 64, 'sha512').toString('hex');
+}
+
 function supabaseDevPlugin(): Plugin {
   return {
     name: 'supabase-dev-api',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith('/api/supabase')) return next();
+        if (!req.url?.startsWith('/api/supabase') && !req.url?.startsWith('/api/auth')) return next();
 
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end();
+          return;
+        }
 
         try {
+          if (req.url === '/api/auth/me') {
+            const authHeader = (req.headers['authorization'] as string) || '';
+            const token = authHeader.replace(/^Bearer\s+/i, '');
+            if (!token) {
+              res.statusCode = 401;
+              res.end(JSON.stringify({ status: 'error', message: 'No authorization token' }));
+              return;
+            }
+            try {
+              const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+              const userRes = await pool.query(
+                'SELECT id, email, name, role, avatar, created_at as "createdAt", last_login as "lastLogin" FROM public.auth_users WHERE id = $1 LIMIT 1',
+                [decoded.id]
+              );
+              if (userRes.rows.length === 0) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ status: 'error', message: 'User not found' }));
+                return;
+              }
+              res.end(JSON.stringify({ status: 'success', user: userRes.rows[0] }));
+            } catch {
+              res.statusCode = 401;
+              res.end(JSON.stringify({ status: 'error', message: 'Invalid token' }));
+            }
+            return;
+          }
+
           if (req.url === '/api/supabase/status') {
             const timeRes = await pool.query('SELECT NOW() as now;');
             const counts = await pool.query(`
@@ -67,6 +109,100 @@ function supabaseDevPlugin(): Plugin {
             req.on('end', async () => {
               try {
                 const parsed = JSON.parse(body || '{}');
+
+                // Auth: Login
+                if (req.url === '/api/auth/login') {
+                  const { email, password } = parsed;
+                  const cleanEmail = (email || '').trim().toLowerCase();
+                  if (!cleanEmail || !password) {
+                    res.statusCode = 400;
+                    res.end(JSON.stringify({ status: 'error', message: 'Email and password are required' }));
+                    return;
+                  }
+                  const userRes = await pool.query('SELECT * FROM public.auth_users WHERE LOWER(email) = $1 LIMIT 1', [cleanEmail]);
+                  if (userRes.rows.length === 0) {
+                    res.statusCode = 401;
+                    res.end(JSON.stringify({ status: 'error', message: 'No account found with this email' }));
+                    return;
+                  }
+                  const user = userRes.rows[0];
+                  const computedHash = hashPassword(password);
+                  if (user.password_hash !== computedHash) {
+                    res.statusCode = 401;
+                    res.end(JSON.stringify({ status: 'error', message: 'Incorrect password' }));
+                    return;
+                  }
+                  await pool.query('UPDATE public.auth_users SET last_login = NOW() WHERE id = $1', [user.id]);
+                  const token = Buffer.from(JSON.stringify({ id: user.id, email: user.email, role: user.role, t: Date.now() })).toString('base64');
+                  res.end(JSON.stringify({
+                    status: 'success',
+                    message: 'Login successful',
+                    token,
+                    user: {
+                      id: user.id,
+                      email: user.email,
+                      name: user.name,
+                      role: user.role,
+                      avatar: user.avatar,
+                      lastLogin: new Date().toISOString()
+                    }
+                  }));
+                  return;
+                }
+
+                // Auth: Register
+                if (req.url === '/api/auth/register') {
+                  const { name, email, password, role } = parsed;
+                  const cleanEmail = (email || '').trim().toLowerCase();
+                  const cleanName = (name || '').trim();
+                  const cleanRole = (role || 'Staff').trim();
+                  if (!cleanName || !cleanEmail || !password) {
+                    res.statusCode = 400;
+                    res.end(JSON.stringify({ status: 'error', message: 'Name, email, and password are required' }));
+                    return;
+                  }
+                  if (password.length < 6) {
+                    res.statusCode = 400;
+                    res.end(JSON.stringify({ status: 'error', message: 'Password must be at least 6 characters long' }));
+                    return;
+                  }
+                  const existing = await pool.query('SELECT id FROM public.auth_users WHERE LOWER(email) = $1 LIMIT 1', [cleanEmail]);
+                  if (existing.rows.length > 0) {
+                    res.statusCode = 400;
+                    res.end(JSON.stringify({ status: 'error', message: 'An account with this email already exists' }));
+                    return;
+                  }
+                  const hash = hashPassword(password);
+                  const id = `usr_${Date.now()}`;
+                  const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=172554&color=fff`;
+                  await pool.query(
+                    `INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar, created_at, last_login)
+                     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+                    [id, cleanEmail, hash, cleanName, cleanRole, avatar]
+                  );
+                  const token = Buffer.from(JSON.stringify({ id, email: cleanEmail, role: cleanRole, t: Date.now() })).toString('base64');
+                  res.end(JSON.stringify({
+                    status: 'success',
+                    message: 'Account registered successfully',
+                    token,
+                    user: {
+                      id,
+                      email: cleanEmail,
+                      name: cleanName,
+                      role: cleanRole,
+                      avatar,
+                      createdAt: new Date().toISOString(),
+                      lastLogin: new Date().toISOString()
+                    }
+                  }));
+                  return;
+                }
+
+                // Auth: Logout
+                if (req.url === '/api/auth/logout') {
+                  res.end(JSON.stringify({ status: 'success', message: 'Signed out successfully' }));
+                  return;
+                }
 
                 if (req.url === '/api/supabase/syncAll') {
                   const { rooms, guests, reservations, payments, staff, settings } = parsed;

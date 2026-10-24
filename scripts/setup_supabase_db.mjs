@@ -1,9 +1,15 @@
 import pkg from 'pg';
+import crypto from 'crypto';
 const { Client } = pkg;
 import {
   INITIAL_ROOMS, INITIAL_GUESTS, INITIAL_RESERVATIONS,
   INITIAL_PAYMENTS, INITIAL_STAFF, INITIAL_SETTINGS
 } from '../src/data/mockData.ts';
+
+const PASSWORD_SALT = 'grandstay_salt_2026';
+function hashPassword(password) {
+  return crypto.pbkdf2Sync(password, PASSWORD_SALT, 10000, 64, 'sha512').toString('hex');
+}
 
 const connectionString = 'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres';
 
@@ -101,6 +107,17 @@ async function setupDatabase() {
         data JSONB NOT NULL,
         "updatedAt" TIMESTAMPTZ DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS public.auth_users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'Staff',
+        avatar TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_login TIMESTAMPTZ
+      );
     `);
     console.log('Tables created successfully!');
 
@@ -112,6 +129,7 @@ async function setupDatabase() {
       ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
       ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
       ALTER TABLE public.hotel_settings ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE public.auth_users ENABLE ROW LEVEL SECURITY;
 
       DO $$
       BEGIN
@@ -132,12 +150,18 @@ async function setupDatabase() {
         
         DROP POLICY IF EXISTS "Allow all on hotel_settings" ON public.hotel_settings;
         CREATE POLICY "Allow all on hotel_settings" ON public.hotel_settings FOR ALL USING (true) WITH CHECK (true);
+
+        DROP POLICY IF EXISTS "Allow all on auth_users" ON public.auth_users;
+        CREATE POLICY "Allow all on auth_users" ON public.auth_users FOR ALL USING (true) WITH CHECK (true);
       END $$;
 
       GRANT ALL ON TABLE public.rooms TO anon, authenticated, service_role;
       GRANT ALL ON TABLE public.guests TO anon, authenticated, service_role;
       GRANT ALL ON TABLE public.reservations TO anon, authenticated, service_role;
       GRANT ALL ON TABLE public.payments TO anon, authenticated, service_role;
+      GRANT ALL ON TABLE public.staff TO anon, authenticated, service_role;
+      GRANT ALL ON TABLE public.hotel_settings TO anon, authenticated, service_role;
+      GRANT ALL ON TABLE public.auth_users TO anon, authenticated, service_role;
       GRANT ALL ON TABLE public.staff TO anon, authenticated, service_role;
       GRANT ALL ON TABLE public.hotel_settings TO anon, authenticated, service_role;
     `);
@@ -260,6 +284,25 @@ async function setupDatabase() {
       VALUES ('current', $1, NOW())
       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, "updatedAt" = NOW();
     `, [JSON.stringify(INITIAL_SETTINGS)]);
+
+    console.log('Seeding default auth users...');
+    const defaultAuthUsers = [
+      { id: 'usr_admin', email: 'admin@grandstay.in', pass: 'admin123', name: 'Rajeshwar Rao', role: 'Administrator', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+      { id: 'usr_manager', email: 'manager@grandstay.in', pass: 'manager123', name: 'Sunita Kapoor', role: 'Manager', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
+      { id: 'usr_reception', email: 'reception@grandstay.in', pass: 'reception123', name: 'Amit Singhania', role: 'Receptionist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+    ];
+    for (const u of defaultAuthUsers) {
+      const hash = hashPassword(u.pass);
+      await client.query(`
+        INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar, created_at, last_login)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          password_hash = EXCLUDED.password_hash,
+          name = EXCLUDED.name,
+          role = EXCLUDED.role,
+          avatar = EXCLUDED.avatar;
+      `, [u.id, u.email, hash, u.name, u.role, u.avatar]);
+    }
 
     console.log('Supabase database setup and seeding COMPLETE!');
     await client.end();

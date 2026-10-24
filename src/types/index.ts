@@ -151,3 +151,14 @@ export interface DashboardMetrics {
   totalGuests: number;
   totalReservations: number;
 }
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'Administrator' | 'Manager' | 'Receptionist' | 'Staff';
+  avatar?: string;
+  createdAt?: string;
+  lastLogin?: string;
+}
+

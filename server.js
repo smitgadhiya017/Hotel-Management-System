@@ -2,6 +2,7 @@ import express from 'express';
 import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const require = createRequire(import.meta.url);
 const pkg = require('pg');
@@ -21,6 +22,49 @@ const pool = new Pool({
   idleTimeoutMillis: 30000,
 });
 
+// ── Password Hashing Helper ──
+const PASSWORD_SALT = 'grandstay_salt_2026';
+function hashPassword(password) {
+  return crypto.pbkdf2Sync(password, PASSWORD_SALT, 10000, 64, 'sha512').toString('hex');
+}
+
+// Ensure auth_users table and initial accounts exist
+async function ensureAuthTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.auth_users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'Staff',
+        avatar TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_login TIMESTAMPTZ
+      );
+    `);
+
+    // Ensure default admin user exists
+    const check = await pool.query('SELECT id FROM public.auth_users LIMIT 1;');
+    if (check.rows.length === 0) {
+      const adminHash = hashPassword('admin123');
+      const managerHash = hashPassword('manager123');
+      const receptionHash = hashPassword('reception123');
+      await pool.query(`
+        INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar)
+        VALUES 
+          ('usr_admin', 'admin@grandstay.in', $1, 'Rajeshwar Rao', 'Administrator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'),
+          ('usr_manager', 'manager@grandstay.in', $2, 'Sunita Kapoor', 'Manager', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'),
+          ('usr_reception', 'reception@grandstay.in', $3, 'Amit Singhania', 'Receptionist', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150')
+        ON CONFLICT (id) DO NOTHING;
+      `, [adminHash, managerHash, receptionHash]);
+    }
+  } catch (err) {
+    console.warn('Note: Error checking auth table:', err.message);
+  }
+}
+ensureAuthTable();
+
 // ── Middleware ──
 app.use(express.json({ limit: '10mb' }));
 
@@ -28,9 +72,154 @@ app.use(express.json({ limit: '10mb' }));
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
+});
+
+// ──────────────────────────────────────────────
+//  AUTHENTICATION ROUTES (/api/auth/*)
+// ──────────────────────────────────────────────
+
+// POST /api/auth/login — authenticate with email and password
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      return res.status(400).json({ status: 'error', message: 'Email and password are required' });
+    }
+
+    const userRes = await pool.query(
+      'SELECT * FROM public.auth_users WHERE LOWER(email) = $1 LIMIT 1',
+      [cleanEmail]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(401).json({ status: 'error', message: 'No account found with this email' });
+    }
+
+    const user = userRes.rows[0];
+    const computedHash = hashPassword(password);
+
+    if (user.password_hash !== computedHash) {
+      return res.status(401).json({ status: 'error', message: 'Incorrect password' });
+    }
+
+    // Update last_login
+    await pool.query('UPDATE public.auth_users SET last_login = NOW() WHERE id = $1', [user.id]);
+
+    const token = Buffer.from(
+      JSON.stringify({ id: user.id, email: user.email, role: user.role, t: Date.now() })
+    ).toString('base64');
+
+    res.json({
+      status: 'success',
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+        lastLogin: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// POST /api/auth/register — create new account
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body || {};
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanName = (name || '').trim();
+    const cleanRole = (role || 'Staff').trim();
+
+    if (!cleanName || !cleanEmail || !password) {
+      return res.status(400).json({ status: 'error', message: 'Name, email, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ status: 'error', message: 'Password must be at least 6 characters long' });
+    }
+
+    // Check if user already exists
+    const existing = await pool.query(
+      'SELECT id FROM public.auth_users WHERE LOWER(email) = $1 LIMIT 1',
+      [cleanEmail]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ status: 'error', message: 'An account with this email already exists' });
+    }
+
+    const hash = hashPassword(password);
+    const id = `usr_${Date.now()}`;
+    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=172554&color=fff`;
+
+    await pool.query(
+      `INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar, created_at, last_login)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+      [id, cleanEmail, hash, cleanName, cleanRole, avatar]
+    );
+
+    const token = Buffer.from(
+      JSON.stringify({ id, email: cleanEmail, role: cleanRole, t: Date.now() })
+    ).toString('base64');
+
+    res.json({
+      status: 'success',
+      message: 'Account registered successfully',
+      token,
+      user: {
+        id,
+        email: cleanEmail,
+        name: cleanName,
+        role: cleanRole,
+        avatar,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// GET /api/auth/me — get currently logged in user from token
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+
+    if (!token) {
+      return res.status(401).json({ status: 'error', message: 'No authorization token provided' });
+    }
+
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+    const userRes = await pool.query(
+      'SELECT id, email, name, role, avatar, created_at as "createdAt", last_login as "lastLogin" FROM public.auth_users WHERE id = $1 LIMIT 1',
+      [decoded.id]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(401).json({ status: 'error', message: 'User not found' });
+    }
+
+    res.json({ status: 'success', user: userRes.rows[0] });
+  } catch (err) {
+    res.status(401).json({ status: 'error', message: 'Invalid or expired session token' });
+  }
+});
+
+// POST /api/auth/logout — sign out
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ status: 'success', message: 'Signed out successfully' });
 });
 
 // ──────────────────────────────────────────────
