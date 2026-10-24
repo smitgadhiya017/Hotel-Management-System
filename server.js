@@ -13,14 +13,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ── Database connection (uses env var in production, hardcoded for local fallback) ──
+// ── Database connection (uses env var in production, with IPv4 pooler fallback for Render) ──
+function getResolvedConnectionString() {
+  let connStr = (process.env.DATABASE_URL || '').trim();
+  if (!connStr) {
+    return 'postgresql://postgres.ykrwarvqrpxndkgyswiv:Smitgadhiya@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
+  }
+  // Render free/standard web services do not have outbound IPv6 routing.
+  // Newer Supabase projects resolve db.[ref].supabase.co strictly to IPv6, causing 'connect ENETUNREACH'.
+  // Automatically rewrite to the Supabase IPv4 connection pooler on port 6543 (ap-southeast-2).
+  if (connStr.includes('db.ykrwarvqrpxndkgyswiv.supabase.co')) {
+    connStr = connStr
+      .replace('db.ykrwarvqrpxndkgyswiv.supabase.co:5432', 'aws-0-ap-southeast-2.pooler.supabase.com:6543')
+      .replace('postgres:', 'postgres.ykrwarvqrpxndkgyswiv:');
+  }
+  return connStr;
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL ||
-    'postgresql://postgres:Smitgadhiya@db.ykrwarvqrpxndkgyswiv.supabase.co:5432/postgres',
+  connectionString: getResolvedConnectionString(),
   ssl: { rejectUnauthorized: false },
   max: 5,
   idleTimeoutMillis: 30000,
 });
+
 
 // ── Password Hashing Helper ──
 const PASSWORD_SALT = 'grandstay_salt_2026';
@@ -72,7 +88,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Health check for Render & monitoring ──
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
 // ──────────────────────────────────────────────
+
 //  AUTHENTICATION ROUTES (/api/auth/*)
 // ──────────────────────────────────────────────
 
