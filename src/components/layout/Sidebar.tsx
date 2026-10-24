@@ -5,6 +5,7 @@ import {
   UserCog, BarChart3, Settings, X, ChevronLeft, ChevronRight, Hotel
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,6 +28,13 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation();
+  const { user } = useAuth();
+
+  const userInitials = user?.name
+    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'AD';
+  const userName = user?.name || 'Administrator';
+  const userRole = user?.role === 'Administrator' ? 'Hotel Administrator' : (user?.role || 'Hotel Staff');
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#172554]">
@@ -76,17 +84,17 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
       {/* User profile */}
       <div className={cn('p-3 border-t border-white/10', collapsed && 'flex justify-center')}>
         {collapsed ? (
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-            RR
+          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold" title={userName}>
+            {userInitials}
           </div>
         ) : (
           <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-              RR
+              {userInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">Rajeshwar Rao</p>
-              <p className="text-blue-300 text-xs truncate">Hotel Administrator</p>
+              <p className="text-white text-sm font-medium truncate">{userName}</p>
+              <p className="text-blue-300 text-xs truncate">{userRole}</p>
             </div>
           </div>
         )}
