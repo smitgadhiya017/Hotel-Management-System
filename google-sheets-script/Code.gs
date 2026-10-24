@@ -11,8 +11,10 @@
  * 6. Set Description: "GrandStay Hotel Database API"
  * 7. Set "Execute as": "Me"
  * 8. Set "Who has access": "Anyone"  <-- IMPORTANT so your frontend dashboard can connect!
- * 9. Click "Deploy", click "Authorize access", sign into your Google account, and copy the Web App URL (ends in /exec).
- * 10. Paste that Web App URL in your GrandStay Dashboard > Settings > Google Sheets Integration!
+ * ACTIVE DEPLOYMENT DETAILS:
+ * - Web App URL: https://script.google.com/macros/s/AKfycbyicYFflyZ2pmihY4cqGz339zoa1zfXVGYqm775bSeQ106p0n_E4_2CWG4v_tzZ8VHBYg/exec
+ * - Deployment ID: AKfycbyicYFflyZ2pmihY4cqGz339zoa1zfXVGYqm775bSeQ106p0n_E4_2CWG4v_tzZ8VHBYg
+ * - Attached Spreadsheet: https://docs.google.com/spreadsheets/d/1lC114sOdG_OCAaTQi6sWCkMonWINXdEpkmnfYfqC8tw/edit
  */
 
 const SPREADSHEET_ID = '1lC114sOdG_OCAaTQi6sWCkMonWINXdEpkmnfYfqC8tw';

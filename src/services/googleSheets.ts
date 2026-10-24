@@ -2,6 +2,8 @@ import { Room, Guest, Reservation, Payment, StaffMember, HotelSettings } from '.
 
 export const USER_SPREADSHEET_ID = '1lC114sOdG_OCAaTQi6sWCkMonWINXdEpkmnfYfqC8tw';
 export const USER_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${USER_SPREADSHEET_ID}/edit`;
+export const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyicYFflyZ2pmihY4cqGz339zoa1zfXVGYqm775bSeQ106p0n_E4_2CWG4v_tzZ8VHBYg/exec';
+export const USER_DEPLOYMENT_ID = 'AKfycbyicYFflyZ2pmihY4cqGz339zoa1zfXVGYqm775bSeQ106p0n_E4_2CWG4v_tzZ8VHBYg';
 
 export interface GoogleSheetSyncPayload {
   rooms?: Room[];

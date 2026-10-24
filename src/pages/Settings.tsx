@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   Save, RotateCcw, AlertTriangle, FileSpreadsheet, CheckCircle2,
@@ -182,6 +182,18 @@ export function Settings() {
       lastSyncedAt: settings.googleSheets?.lastSyncedAt ?? '',
     }
   });
+
+  useEffect(() => {
+    if (settings.googleSheets?.webAppUrl && !form.googleSheets?.webAppUrl) {
+      setForm(f => ({
+        ...f,
+        googleSheets: {
+          ...f.googleSheets!,
+          webAppUrl: settings.googleSheets!.webAppUrl,
+        }
+      }));
+    }
+  }, [settings.googleSheets?.webAppUrl]);
 
   const [resetConfirm, setResetConfirm] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);

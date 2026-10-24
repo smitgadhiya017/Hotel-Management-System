@@ -170,7 +170,25 @@ export function useStaff() {
 }
 
 export function useSettings() {
-  const [settings, setSettings] = useState<HotelSettings>(() => loadFromStorage(STORAGE_KEYS.settings, INITIAL_SETTINGS));
+  const [settings, setSettings] = useState<HotelSettings>(() => {
+    const loaded = loadFromStorage(STORAGE_KEYS.settings, INITIAL_SETTINGS);
+    if (!loaded.googleSheets?.webAppUrl && INITIAL_SETTINGS.googleSheets?.webAppUrl) {
+      const updated: HotelSettings = {
+        ...loaded,
+        googleSheets: {
+          ...loaded.googleSheets,
+          enabled: true,
+          webAppUrl: INITIAL_SETTINGS.googleSheets.webAppUrl,
+          spreadsheetId: loaded.googleSheets?.spreadsheetId || INITIAL_SETTINGS.googleSheets.spreadsheetId,
+          autoSync: loaded.googleSheets?.autoSync ?? true,
+          lastSyncedAt: loaded.googleSheets?.lastSyncedAt ?? '',
+        }
+      };
+      saveToStorage(STORAGE_KEYS.settings, updated);
+      return updated;
+    }
+    return loaded;
+  });
 
   const updateSettings = useCallback((s: HotelSettings) => {
     setSettings(s);
