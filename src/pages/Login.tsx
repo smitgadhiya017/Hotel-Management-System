@@ -6,17 +6,23 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const Login: React.FC = () => {
+interface LoginProps {
+  defaultSignUp?: boolean;
+}
+
+export const Login: React.FC<LoginProps> = ({ defaultSignUp = false }) => {
   const { login, register, isAuthenticated, quickLogin } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
   const from      = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
+  const isSignUpPath = location.pathname === '/signup';
+  const [isSignUp, setIsSignUp]         = useState(defaultSignUp || isSignUpPath);
+
   useEffect(() => {
     if (isAuthenticated) navigate(from, { replace: true });
   }, [isAuthenticated, navigate, from]);
 
-  const [isSignUp, setIsSignUp]         = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [errorMsg, setErrorMsg]         = useState('');
@@ -31,6 +37,43 @@ export const Login: React.FC = () => {
   const [signUpEmail, setSignUpEmail]   = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [signUpErrors, setSignUpErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+
+  const validateSignUp = () => {
+    const errors: { name?: string; email?: string; password?: string; confirmPassword?: string } = {};
+
+    if (!name.trim()) {
+      errors.name = 'Full name is required';
+    } else if (name.trim().length < 2) {
+      errors.name = 'Please enter a valid full name';
+    }
+
+    if (!signUpEmail.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signUpEmail.trim())) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!signUpPassword) {
+      errors.password = 'Password is required';
+    } else if (signUpPassword.length < 6) {
+      errors.password = 'Password must be at least 6 characters long';
+    }
+
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Confirm your password';
+    } else if (confirmPassword !== signUpPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setSignUpErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,18 +97,8 @@ export const Login: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!name.trim() || !signUpEmail.trim() || !signUpPassword) {
-      setErrorMsg('Please fill in all required fields.');
-      return;
-    }
-    if (signUpPassword.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
-      return;
-    }
-    if (signUpPassword !== confirmPassword) {
-      setErrorMsg('Passwords do not match.');
-      return;
-    }
+    if (!validateSignUp()) return;
+
     setLoading(true);
     const res = await register(name.trim(), signUpEmail.trim(), signUpPassword, 'Administrator');
     setLoading(false);
@@ -108,6 +141,32 @@ export const Login: React.FC = () => {
         {/* ── Card ───────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/80 border border-slate-200 p-8">
 
+          {/* Seamless Sign In / Sign Up Toggle */}
+          <div className="flex p-1 bg-slate-100 rounded-xl mb-6 border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(false); setErrorMsg(''); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
+                !isSignUp
+                  ? 'bg-white text-slate-900 shadow-sm font-bold border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(true); setErrorMsg(''); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
+                isSignUp
+                  ? 'bg-white text-slate-900 shadow-sm font-bold border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
           {/* Card header */}
           <div className="flex items-center gap-2 mb-6">
             <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center">
@@ -119,7 +178,7 @@ export const Login: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-800">
-                {isSignUp ? 'Create Admin Account' : 'Administrator Sign In'}
+                {isSignUp ? 'Administrator Sign Up' : 'Administrator Sign In'}
               </h2>
               <p className="text-xs text-slate-400">
                 {isSignUp ? 'Register authorized administrator credentials' : 'Restricted to authorized admin only'}
@@ -144,16 +203,28 @@ export const Login: React.FC = () => {
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${signUpErrors.name ? 'text-red-400' : 'text-slate-400'}`} />
                   <input
                     type="text"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      setName(e.target.value);
+                      if (signUpErrors.name) setSignUpErrors(prev => ({ ...prev, name: undefined }));
+                    }}
                     placeholder="e.g. Vikramaditya Singh"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all ${
+                      signUpErrors.name
+                        ? 'border-red-300 focus:ring-2 focus:ring-red-400/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554]'
+                    }`}
                   />
                 </div>
+                {signUpErrors.name && (
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{signUpErrors.name}</span>
+                  </p>
+                )}
               </div>
 
               {/* Email */}
@@ -162,16 +233,28 @@ export const Login: React.FC = () => {
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${signUpErrors.email ? 'text-red-400' : 'text-slate-400'}`} />
                   <input
                     type="email"
                     value={signUpEmail}
-                    onChange={e => setSignUpEmail(e.target.value)}
+                    onChange={e => {
+                      setSignUpEmail(e.target.value);
+                      if (signUpErrors.email) setSignUpErrors(prev => ({ ...prev, email: undefined }));
+                    }}
                     placeholder="admin@grandstay.in"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all ${
+                      signUpErrors.email
+                        ? 'border-red-300 focus:ring-2 focus:ring-red-400/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554]'
+                    }`}
                   />
                 </div>
+                {signUpErrors.email && (
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{signUpErrors.email}</span>
+                  </p>
+                )}
               </div>
 
               {/* Password */}
@@ -180,15 +263,20 @@ export const Login: React.FC = () => {
                   Password (min. 6 characters)
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${signUpErrors.password ? 'text-red-400' : 'text-slate-400'}`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={signUpPassword}
-                    onChange={e => setSignUpPassword(e.target.value)}
+                    onChange={e => {
+                      setSignUpPassword(e.target.value);
+                      if (signUpErrors.password) setSignUpErrors(prev => ({ ...prev, password: undefined }));
+                    }}
                     placeholder="••••••••"
-                    required
-                    minLength={6}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                    className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all ${
+                      signUpErrors.password
+                        ? 'border-red-300 focus:ring-2 focus:ring-red-400/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554]'
+                    }`}
                   />
                   <button
                     type="button"
@@ -198,6 +286,12 @@ export const Login: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {signUpErrors.password && (
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{signUpErrors.password}</span>
+                  </p>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -206,16 +300,28 @@ export const Login: React.FC = () => {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Lock className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${signUpErrors.confirmPassword ? 'text-red-400' : 'text-slate-400'}`} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={e => {
+                      setConfirmPassword(e.target.value);
+                      if (signUpErrors.confirmPassword) setSignUpErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                    }}
                     placeholder="••••••••"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554] transition-all"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all ${
+                      signUpErrors.confirmPassword
+                        ? 'border-red-300 focus:ring-2 focus:ring-red-400/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-2 focus:ring-[#172554]/30 focus:border-[#172554]'
+                    }`}
                   />
                 </div>
+                {signUpErrors.confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{signUpErrors.confirmPassword}</span>
+                  </p>
+                )}
               </div>
 
               {/* Submit */}

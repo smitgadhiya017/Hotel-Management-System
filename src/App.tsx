@@ -26,8 +26,9 @@ export default function App() {
       <AuthProvider>
         <Toaster position="top-right" richColors closeButton />
         <Routes>
-          {/* Public Login Route */}
+          {/* Public Login & Signup Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Login defaultSignUp={true} />} />
 
           {/* Protected Hotel Management Routes */}
           <Route
