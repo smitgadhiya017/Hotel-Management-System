@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import pkg from 'pg'
 import crypto from 'crypto'
-const { Pool } = pkg
+const { Pool, types } = pkg
+if (types) {
+  types.setTypeParser(1700, (val: string) => parseFloat(val));
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || '',

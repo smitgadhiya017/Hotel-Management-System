@@ -47,16 +47,16 @@ interface KpiCardProps {
 
 export function KpiCard({ title, value, icon, trend, accent = 'bg-blue-50 text-blue-600', subtitle }: KpiCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-card p-5 flex items-start gap-4 hover:shadow-card-md transition-shadow">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-card p-5 flex items-start gap-4 hover:shadow-card-md transition-shadow min-w-0 overflow-hidden">
       <div className={cn('p-3 rounded-lg flex-shrink-0', accent)}>
         {icon}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-500 truncate">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 mt-0.5">{value}</p>
-        {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <p className="text-sm font-medium text-slate-500 truncate" title={title}>{title}</p>
+        <p className="text-2xl font-bold text-slate-900 mt-0.5 truncate">{value}</p>
+        {subtitle && <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
         {trend && (
-          <p className={cn('text-xs font-medium mt-1', trend.value >= 0 ? 'text-green-600' : 'text-red-600')}>
+          <p className={cn('text-xs font-medium mt-1 truncate', trend.value >= 0 ? 'text-green-600' : 'text-red-600')}>
             {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
           </p>
         )}

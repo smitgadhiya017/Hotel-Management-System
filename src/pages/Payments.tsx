@@ -35,10 +35,10 @@ export function Payments() {
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const summary = {
-    totalRevenue: payments.filter(p => p.status === 'Paid').reduce((s, p) => s + p.amount, 0),
+    totalRevenue: payments.filter(p => p.status === 'Paid').reduce((s, p) => s + Number(p.amount || 0), 0),
     received: payments.filter(p => p.status === 'Paid').length,
-    pending: payments.filter(p => p.status === 'Unpaid' || p.status === 'Partial').reduce((s, p) => s + p.amount, 0),
-    refunded: payments.filter(p => p.status === 'Refunded').reduce((s, p) => s + p.amount, 0),
+    pending: payments.filter(p => p.status === 'Unpaid' || p.status === 'Partial').reduce((s, p) => s + Number(p.amount || 0), 0),
+    refunded: payments.filter(p => p.status === 'Refunded').reduce((s, p) => s + Number(p.amount || 0), 0),
   };
 
   function validate(): boolean {

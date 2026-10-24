@@ -6,10 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = 'INR'): string {
+export function formatCurrency(amount: number | string, currency = 'INR'): string {
+  const num = typeof amount === 'number' ? (isNaN(amount) ? 0 : amount) : (Number(amount) || 0);
   const symbols: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', INR: '₹', JPY: '¥' };
   const symbol = symbols[currency] || currency;
-  return `${symbol}${amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `${symbol}${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 export function formatDate(dateStr: string): string {

@@ -7,7 +7,10 @@ import crypto from 'crypto';
 
 const require = createRequire(import.meta.url);
 const pkg = require('pg');
-const { Pool } = pkg;
+const { Pool, types } = pkg;
+if (types) {
+  types.setTypeParser(1700, (val) => parseFloat(val));
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

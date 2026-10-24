@@ -19,8 +19,8 @@ export function Reports() {
   const months = dateRange === '3m' ? 3 : dateRange === '6m' ? 6 : 12;
   const revenueData = MONTHLY_REVENUE_DATA.slice(-months);
 
-  const totalRevenue = payments.filter(p => p.status === 'Paid').reduce((s, p) => s + p.amount, 0);
-  const avgBookingValue = reservations.length ? (reservations.reduce((s, r) => s + r.totalAmount, 0) / reservations.length) : 0;
+  const totalRevenue = payments.filter(p => p.status === 'Paid').reduce((s, p) => s + Number(p.amount || 0), 0);
+  const avgBookingValue = reservations.length ? (reservations.reduce((s, r) => s + Number(r.totalAmount || 0), 0) / reservations.length) : 0;
   const occupancyRate = rooms.length ? Math.round((rooms.filter(r => r.status === 'Occupied').length / rooms.length) * 100) : 0;
   const bookingCount = reservations.length;
 

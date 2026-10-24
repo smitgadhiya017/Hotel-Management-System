@@ -63,20 +63,58 @@ function seedIfNeeded() {
 
 seedIfNeeded();
 
+function normalizeRoom(r: Room): Room {
+  return {
+    ...r,
+    pricePerNight: Number(r.pricePerNight) || 0,
+    floor: Number(r.floor) || 0,
+    capacity: Number(r.capacity) || 0,
+  };
+}
+
+function normalizeGuest(g: Guest): Guest {
+  return {
+    ...g,
+    totalBookings: Number(g.totalBookings) || 0,
+    totalSpent: Number(g.totalSpent) || 0,
+  };
+}
+
+function normalizeReservation(r: Reservation): Reservation {
+  return {
+    ...r,
+    pricePerNight: Number(r.pricePerNight) || 0,
+    nights: Number(r.nights) || 0,
+    totalAmount: Number(r.totalAmount) || 0,
+    adults: Number(r.adults) || 0,
+    children: Number(r.children) || 0,
+  };
+}
+
+function normalizePayment(p: Payment): Payment {
+  return {
+    ...p,
+    amount: Number(p.amount) || 0,
+  };
+}
+
 export function useRooms() {
-  const [rooms, setRooms] = useState<Room[]>(() => loadFromStorage(STORAGE_KEYS.rooms, INITIAL_ROOMS));
+  const [rooms, setRooms] = useState<Room[]>(() => loadFromStorage(STORAGE_KEYS.rooms, INITIAL_ROOMS).map(normalizeRoom));
 
   const saveRooms = useCallback((updated: Room[]) => {
-    setRooms(updated);
-    saveToStorage(STORAGE_KEYS.rooms, updated);
+    const normalized = (updated || []).map(normalizeRoom);
+    setRooms(normalized);
+    saveToStorage(STORAGE_KEYS.rooms, normalized);
   }, []);
 
   const addRoom = useCallback((room: Room) => {
-    setRooms(prev => { const next = [...prev, room]; saveToStorage(STORAGE_KEYS.rooms, next); return next; });
+    const normalized = normalizeRoom(room);
+    setRooms(prev => { const next = [...prev, normalized]; saveToStorage(STORAGE_KEYS.rooms, next); return next; });
   }, []);
 
   const updateRoom = useCallback((room: Room) => {
-    setRooms(prev => { const next = prev.map(r => r.id === room.id ? room : r); saveToStorage(STORAGE_KEYS.rooms, next); return next; });
+    const normalized = normalizeRoom(room);
+    setRooms(prev => { const next = prev.map(r => r.id === room.id ? normalized : r); saveToStorage(STORAGE_KEYS.rooms, next); return next; });
   }, []);
 
   const deleteRoom = useCallback((id: string) => {
@@ -87,19 +125,22 @@ export function useRooms() {
 }
 
 export function useGuests() {
-  const [guests, setGuests] = useState<Guest[]>(() => loadFromStorage(STORAGE_KEYS.guests, INITIAL_GUESTS));
+  const [guests, setGuests] = useState<Guest[]>(() => loadFromStorage(STORAGE_KEYS.guests, INITIAL_GUESTS).map(normalizeGuest));
 
   const saveGuests = useCallback((updated: Guest[]) => {
-    setGuests(updated);
-    saveToStorage(STORAGE_KEYS.guests, updated);
+    const normalized = (updated || []).map(normalizeGuest);
+    setGuests(normalized);
+    saveToStorage(STORAGE_KEYS.guests, normalized);
   }, []);
 
   const addGuest = useCallback((guest: Guest) => {
-    setGuests(prev => { const next = [...prev, guest]; saveToStorage(STORAGE_KEYS.guests, next); return next; });
+    const normalized = normalizeGuest(guest);
+    setGuests(prev => { const next = [...prev, normalized]; saveToStorage(STORAGE_KEYS.guests, next); return next; });
   }, []);
 
   const updateGuest = useCallback((guest: Guest) => {
-    setGuests(prev => { const next = prev.map(g => g.id === guest.id ? guest : g); saveToStorage(STORAGE_KEYS.guests, next); return next; });
+    const normalized = normalizeGuest(guest);
+    setGuests(prev => { const next = prev.map(g => g.id === guest.id ? normalized : g); saveToStorage(STORAGE_KEYS.guests, next); return next; });
   }, []);
 
   const deleteGuest = useCallback((id: string) => {
@@ -110,19 +151,22 @@ export function useGuests() {
 }
 
 export function useReservations() {
-  const [reservations, setReservations] = useState<Reservation[]>(() => loadFromStorage(STORAGE_KEYS.reservations, INITIAL_RESERVATIONS));
+  const [reservations, setReservations] = useState<Reservation[]>(() => loadFromStorage(STORAGE_KEYS.reservations, INITIAL_RESERVATIONS).map(normalizeReservation));
 
   const saveReservations = useCallback((updated: Reservation[]) => {
-    setReservations(updated);
-    saveToStorage(STORAGE_KEYS.reservations, updated);
+    const normalized = (updated || []).map(normalizeReservation);
+    setReservations(normalized);
+    saveToStorage(STORAGE_KEYS.reservations, normalized);
   }, []);
 
   const addReservation = useCallback((res: Reservation) => {
-    setReservations(prev => { const next = [...prev, res]; saveToStorage(STORAGE_KEYS.reservations, next); return next; });
+    const normalized = normalizeReservation(res);
+    setReservations(prev => { const next = [...prev, normalized]; saveToStorage(STORAGE_KEYS.reservations, next); return next; });
   }, []);
 
   const updateReservation = useCallback((res: Reservation) => {
-    setReservations(prev => { const next = prev.map(r => r.id === res.id ? res : r); saveToStorage(STORAGE_KEYS.reservations, next); return next; });
+    const normalized = normalizeReservation(res);
+    setReservations(prev => { const next = prev.map(r => r.id === res.id ? normalized : r); saveToStorage(STORAGE_KEYS.reservations, next); return next; });
   }, []);
 
   const deleteReservation = useCallback((id: string) => {
@@ -133,19 +177,22 @@ export function useReservations() {
 }
 
 export function usePayments() {
-  const [payments, setPayments] = useState<Payment[]>(() => loadFromStorage(STORAGE_KEYS.payments, INITIAL_PAYMENTS));
+  const [payments, setPayments] = useState<Payment[]>(() => loadFromStorage(STORAGE_KEYS.payments, INITIAL_PAYMENTS).map(normalizePayment));
 
   const savePayments = useCallback((updated: Payment[]) => {
-    setPayments(updated);
-    saveToStorage(STORAGE_KEYS.payments, updated);
+    const normalized = (updated || []).map(normalizePayment);
+    setPayments(normalized);
+    saveToStorage(STORAGE_KEYS.payments, normalized);
   }, []);
 
   const addPayment = useCallback((p: Payment) => {
-    setPayments(prev => { const next = [...prev, p]; saveToStorage(STORAGE_KEYS.payments, next); return next; });
+    const normalized = normalizePayment(p);
+    setPayments(prev => { const next = [...prev, normalized]; saveToStorage(STORAGE_KEYS.payments, next); return next; });
   }, []);
 
   const updatePayment = useCallback((p: Payment) => {
-    setPayments(prev => { const next = prev.map(pay => pay.id === p.id ? p : pay); saveToStorage(STORAGE_KEYS.payments, next); return next; });
+    const normalized = normalizePayment(p);
+    setPayments(prev => { const next = prev.map(pay => pay.id === p.id ? normalized : pay); saveToStorage(STORAGE_KEYS.payments, next); return next; });
   }, []);
 
   return { payments, addPayment, updatePayment, savePayments };
@@ -257,7 +304,7 @@ export function useDashboardMetrics(rooms: Room[], reservations: Reservation[], 
   const occupiedRooms = rooms.filter(r => r.status === 'Occupied').length;
   const reservedRooms = rooms.filter(r => r.status === 'Reserved').length;
   const maintenanceRooms = rooms.filter(r => r.status === 'Maintenance').length;
-  const todayRevenue = payments.filter(p => p.date === today && p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0);
+  const todayRevenue = payments.filter(p => p.date === today && p.status === 'Paid').reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const totalReservations = reservations.length;
 
   const todayArrivals = reservations.filter(r => r.checkIn === today && r.bookingStatus === 'Confirmed');
