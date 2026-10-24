@@ -285,24 +285,18 @@ async function setupDatabase() {
       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, "updatedAt" = NOW();
     `, [JSON.stringify(INITIAL_SETTINGS)]);
 
-    console.log('Seeding default auth users...');
-    const defaultAuthUsers = [
-      { id: 'usr_admin', email: 'admin@grandstay.in', pass: 'admin123', name: 'Rajeshwar Rao', role: 'Administrator', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
-      { id: 'usr_manager', email: 'manager@grandstay.in', pass: 'manager123', name: 'Sunita Kapoor', role: 'Manager', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
-      { id: 'usr_reception', email: 'reception@grandstay.in', pass: 'reception123', name: 'Amit Singhania', role: 'Receptionist', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
-    ];
-    for (const u of defaultAuthUsers) {
-      const hash = hashPassword(u.pass);
-      await client.query(`
-        INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar, created_at, last_login)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        ON CONFLICT (id) DO UPDATE SET
-          password_hash = EXCLUDED.password_hash,
-          name = EXCLUDED.name,
-          role = EXCLUDED.role,
-          avatar = EXCLUDED.avatar;
-      `, [u.id, u.email, hash, u.name, u.role, u.avatar]);
-    }
+    console.log('Seeding default admin auth user...');
+    await client.query(`DELETE FROM public.auth_users WHERE email != 'admin@grandstay.in';`);
+    const adminHash = hashPassword('admin123');
+    await client.query(`
+      INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar, created_at, last_login)
+      VALUES ('usr_admin', 'admin@grandstay.in', $1, 'Rajeshwar Rao', 'Administrator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        password_hash = EXCLUDED.password_hash,
+        name = EXCLUDED.name,
+        role = 'Administrator',
+        avatar = EXCLUDED.avatar;
+    `, [adminHash]);
 
     console.log('Supabase database setup and seeding COMPLETE!');
     await client.end();

@@ -45,19 +45,14 @@ async function ensureAuthTable() {
     `);
 
     // Ensure default admin user exists
-    const check = await pool.query('SELECT id FROM public.auth_users LIMIT 1;');
+    const check = await pool.query("SELECT id FROM public.auth_users WHERE email = 'admin@grandstay.in' LIMIT 1;");
     if (check.rows.length === 0) {
       const adminHash = hashPassword('admin123');
-      const managerHash = hashPassword('manager123');
-      const receptionHash = hashPassword('reception123');
       await pool.query(`
         INSERT INTO public.auth_users (id, email, password_hash, name, role, avatar)
-        VALUES 
-          ('usr_admin', 'admin@grandstay.in', $1, 'Rajeshwar Rao', 'Administrator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'),
-          ('usr_manager', 'manager@grandstay.in', $2, 'Sunita Kapoor', 'Manager', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'),
-          ('usr_reception', 'reception@grandstay.in', $3, 'Amit Singhania', 'Receptionist', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150')
+        VALUES ('usr_admin', 'admin@grandstay.in', $1, 'Rajeshwar Rao', 'Administrator', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150')
         ON CONFLICT (id) DO NOTHING;
-      `, [adminHash, managerHash, receptionHash]);
+      `, [adminHash]);
     }
   } catch (err) {
     console.warn('Note: Error checking auth table:', err.message);
@@ -97,10 +92,16 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (userRes.rows.length === 0) {
-      return res.status(401).json({ status: 'error', message: 'No account found with this email' });
+      return res.status(401).json({ status: 'error', message: 'No administrator account found with this email' });
     }
 
     const user = userRes.rows[0];
+
+    // Restrict access: Only Administrator can sign in
+    if (user.role !== 'Administrator') {
+      return res.status(403).json({ status: 'error', message: 'Access denied: Only Administrators can sign in to this portal.' });
+    }
+
     const computedHash = hashPassword(password);
 
     if (user.password_hash !== computedHash) {

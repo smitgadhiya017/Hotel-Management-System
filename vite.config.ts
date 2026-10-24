@@ -126,6 +126,11 @@ function supabaseDevPlugin(): Plugin {
                     return;
                   }
                   const user = userRes.rows[0];
+                  if (user.role !== 'Administrator') {
+                    res.statusCode = 403;
+                    res.end(JSON.stringify({ status: 'error', message: 'Access denied: Only Administrators can sign in to this portal.' }));
+                    return;
+                  }
                   const computedHash = hashPassword(password);
                   if (user.password_hash !== computedHash) {
                     res.statusCode = 401;

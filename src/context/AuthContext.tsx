@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const STORAGE_KEY_USER = 'grandstay_auth_user';
 const STORAGE_KEY_TOKEN = 'grandstay_auth_token';
 
-// Demo fallback accounts in case network is disconnected
+// Demo fallback account for Administrator in case network is disconnected
 const DEMO_FALLBACK_ACCOUNTS: Record<string, { pass: string; user: AuthUser }> = {
   'admin@grandstay.in': {
     pass: 'admin123',
@@ -27,26 +27,6 @@ const DEMO_FALLBACK_ACCOUNTS: Record<string, { pass: string; user: AuthUser }> =
       name: 'Rajeshwar Rao',
       role: 'Administrator',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    },
-  },
-  'manager@grandstay.in': {
-    pass: 'manager123',
-    user: {
-      id: 'usr_manager',
-      email: 'manager@grandstay.in',
-      name: 'Sunita Kapoor',
-      role: 'Manager',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-    },
-  },
-  'reception@grandstay.in': {
-    pass: 'reception123',
-    user: {
-      id: 'usr_reception',
-      email: 'reception@grandstay.in',
-      name: 'Amit Singhania',
-      role: 'Receptionist',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
     },
   },
 };

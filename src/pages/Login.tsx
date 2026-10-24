@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuthUser } from '../types';
 import {
   Crown,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  User,
   ShieldCheck,
-  Building2,
   Sparkles,
   ArrowRight,
-  CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  KeyRound
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Login: React.FC = () => {
-  const { login, register, isAuthenticated, quickLogin } = useAuth();
+  const { login, isAuthenticated, quickLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,27 +29,21 @@ export const Login: React.FC = () => {
     }
   }, [isAuthenticated, navigate, from]);
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Sign In form fields
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Sign In form fields (pre-filled with default admin for convenience)
+  const [email, setEmail] = useState('admin@grandstay.in');
+  const [password, setPassword] = useState('admin123');
   const [rememberMe, setRememberMe] = useState(true);
-
-  // Sign Up form fields
-  const [name, setName] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'Administrator' | 'Manager' | 'Receptionist' | 'Staff'>('Staff');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!email.trim() || !password) {
-      setErrorMessage('Please enter both your work email and password.');
+      setErrorMessage('Please enter both your administrator email and password.');
       return;
     }
 
@@ -61,65 +52,26 @@ export const Login: React.FC = () => {
     setLoading(false);
 
     if (res.success) {
-      toast.success(res.message || 'Welcome back to GrandStay Palace!', {
-        description: 'Successfully authenticated session',
+      toast.success(res.message || 'Welcome back, Administrator!', {
+        description: 'Session authenticated successfully',
       });
       navigate(from, { replace: true });
     } else {
       setErrorMessage(res.message || 'Authentication failed. Please check credentials.');
       toast.error('Sign In Failed', {
-        description: res.message || 'Invalid email or password',
+        description: res.message || 'Invalid administrator email or password',
       });
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Instant 1-Click Admin Login
+  const handleInstantAdminLogin = () => {
+    setEmail('admin@grandstay.in');
+    setPassword('admin123');
     setErrorMessage('');
-
-    if (!name.trim() || !email.trim() || !password) {
-      setErrorMessage('Please fill in all required fields.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match. Please re-enter.');
-      return;
-    }
-
-    setLoading(true);
-    const res = await register(name, email, password, role);
-    setLoading(false);
-
-    if (res.success) {
-      toast.success('Account created successfully!', {
-        description: `Welcome to the team, ${name}.`,
-      });
-      navigate(from, { replace: true });
-    } else {
-      setErrorMessage(res.message || 'Failed to create account.');
-      toast.error('Registration Failed', {
-        description: res.message,
-      });
-    }
-  };
-
-  // Demo auto-fill helpers
-  const handleQuickDemo = (demoEmail: string, demoPass: string, demoRole: 'Administrator' | 'Manager' | 'Receptionist', demoName: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setMode('signin');
-    setErrorMessage('');
-    
-    // Quick login directly with feedback
-    quickLogin(demoEmail, demoRole, demoName);
-    toast.success(`Signed in as ${demoRole} (${demoName})`, {
-      description: 'Demo session active',
+    quickLogin('admin@grandstay.in', 'Administrator', 'Rajeshwar Rao');
+    toast.success('Signed in as Administrator (Rajeshwar Rao)', {
+      description: 'Full portal access granted',
     });
     navigate(from, { replace: true });
   };
@@ -139,7 +91,7 @@ export const Login: React.FC = () => {
         }}
       />
 
-      <div className="w-full flex flex-col lg:flex-row max-w-7xl mx-auto my-auto p-4 sm:p-8 z-10">
+      <div className="w-full flex flex-col lg:flex-row max-w-6xl mx-auto my-auto p-4 sm:p-8 z-10">
         {/* Left Side: Brand & Hotel Atmosphere */}
         <div className="lg:w-1/2 flex flex-col justify-between p-6 sm:p-12 text-white">
           <div>
@@ -163,26 +115,26 @@ export const Login: React.FC = () => {
             {/* Tagline & Feature Highlights */}
             <div className="space-y-6 mt-12 max-w-md">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Enterprise Hotel Management Suite</span>
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Administrator Control Center</span>
               </div>
 
               <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white leading-tight">
-                Seamless hospitality management, designed for modern luxury.
+                Complete hospitality operations in one unified portal.
               </h2>
 
               <p className="text-slate-400 text-sm leading-relaxed">
-                Access guest reservations, front-desk check-ins, room inventory, billing & revenue metrics with instant Supabase cloud synchronization.
+                Manage room inventory, guest bookings, check-ins, payments, staff directory, and real-time reports with cloud Supabase synchronization.
               </p>
 
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
-                  <p className="text-2xl font-bold text-amber-400">100%</p>
-                  <p className="text-xs text-slate-400 mt-1">Live Cloud Sync (Supabase)</p>
+                  <p className="text-2xl font-bold text-amber-400">Admin</p>
+                  <p className="text-xs text-slate-400 mt-1">Full System Access</p>
                 </div>
                 <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
-                  <p className="text-2xl font-bold text-emerald-400">256-bit</p>
-                  <p className="text-xs text-slate-400 mt-1">Encrypted Access</p>
+                  <p className="text-2xl font-bold text-emerald-400">100%</p>
+                  <p className="text-xs text-slate-400 mt-1">Supabase PostgreSQL</p>
                 </div>
               </div>
             </div>
@@ -194,44 +146,20 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side: Auth Form Card */}
+        {/* Right Side: Admin Sign In Card */}
         <div className="lg:w-1/2 flex items-center justify-center p-2 sm:p-6">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 sm:p-10 border border-slate-100 relative">
-            {/* Top Mode Switcher */}
-            <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
-              <button
-                type="button"
-                onClick={() => { setMode('signin'); setErrorMessage(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all ${
-                  mode === 'signin'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode('signup'); setErrorMessage(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all ${
-                  mode === 'signup'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {/* Header Text */}
+            {/* Header Badge & Title */}
             <div className="mb-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold mb-3">
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <span>Admin Login Only</span>
+              </div>
               <h3 className="text-2xl font-bold text-slate-900">
-                {mode === 'signin' ? 'Welcome Back' : 'Create Staff Account'}
+                Administrator Sign In
               </h3>
               <p className="text-sm text-slate-500 mt-1">
-                {mode === 'signin'
-                  ? 'Enter your work email and password to access the portal.'
-                  : 'Register a new administrator or staff credentials.'}
+                Enter your administrator credentials to access the hotel management portal.
               </p>
             </div>
 
@@ -244,244 +172,123 @@ export const Login: React.FC = () => {
             )}
 
             {/* SIGN IN FORM */}
-            {mode === 'signin' && (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Work Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="e.g. admin@grandstay.in"
-                      required
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                  </div>
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Admin Email
+                </label>
+                <div className="relative">
+                  <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="admin@grandstay.in"
+                    required
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                  />
                 </div>
+              </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Password
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => toast.info('Default Demo Passwords', {
-                        description: 'Admin: admin123 | Manager: manager123 | Reception: reception123',
-                      })}
-                      className="text-xs text-blue-600 hover:underline font-medium"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={e => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-xs text-slate-600">Remember this session</span>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Password
                   </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 px-4 bg-[#172554] hover:bg-[#1E3A8A] text-white font-semibold rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Verifying credentials...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign In to Dashboard</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* SIGN UP FORM */}
-            {mode === 'signup' && (
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="e.g. Vikramaditya Rathore"
-                      required
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Work Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="e.g. vikram@grandstay.in"
-                      required
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Assign Role
-                  </label>
-                  <select
-                    value={role}
-                    onChange={e => setRole(e.target.value as AuthUser['role'])}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                  <button
+                    type="button"
+                    onClick={() => toast.info('Default Admin Password', {
+                      description: 'Email: admin@grandstay.in | Password: admin123',
+                    })}
+                    className="text-xs text-blue-600 hover:underline font-medium"
                   >
-                    <option value="Administrator">Administrator (Full Access)</option>
-                    <option value="Manager">Manager (Operations & Reports)</option>
-                    <option value="Receptionist">Receptionist (Bookings & Check-in)</option>
-                    <option value="Staff">Staff (General Staff)</option>
-                  </select>
+                    Forgot password?
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Password (min. 6 characters)
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div className="relative">
+                  <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-slate-600">Remember this device</span>
+                </label>
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Creating account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Register Staff Account</span>
-                      <CheckCircle2 className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 bg-[#172554] hover:bg-[#1E3A8A] text-white font-semibold rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Verifying admin credentials...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign In to Dashboard</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
 
-            {/* Quick Demo Credentials Bar */}
+            {/* Quick 1-Click Admin Login (Single Clean Button) */}
             <div className="mt-8 pt-6 border-t border-slate-100">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Quick 1-Click Demo Login
+                  Quick 1-Click Test Login
                 </span>
-                <span className="text-[11px] text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  Instant Test
+                <span className="text-[11px] text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Admin Only
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('admin@grandstay.in', 'admin123', 'Administrator', 'Rajeshwar Rao')}
-                  className="p-2.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 text-left transition-all group cursor-pointer"
-                >
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-amber-700 flex items-center gap-1">
-                    👑 Admin
-                  </p>
-                  <p className="text-[10px] text-slate-500 truncate">admin123</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('manager@grandstay.in', 'manager123', 'Manager', 'Sunita Kapoor')}
-                  className="p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 text-left transition-all group cursor-pointer"
-                >
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700 flex items-center gap-1">
-                    👔 Manager
-                  </p>
-                  <p className="text-[10px] text-slate-500 truncate">manager123</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('reception@grandstay.in', 'reception123', 'Receptionist', 'Amit Singhania')}
-                  className="p-2.5 rounded-xl border border-slate-200 hover:border-purple-400 hover:bg-purple-50/50 text-left transition-all group cursor-pointer"
-                >
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-purple-700 flex items-center gap-1">
-                    🛎️ Reception
-                  </p>
-                  <p className="text-[10px] text-slate-500 truncate">reception123</p>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleInstantAdminLogin}
+                className="w-full p-3 rounded-xl border border-amber-300 bg-amber-50/60 hover:bg-amber-100/70 hover:border-amber-400 transition-all flex items-center justify-between group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-800 font-bold text-sm">
+                    👑
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 group-hover:text-amber-900">
+                      Sign in as Administrator
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-mono">
+                      admin@grandstay.in · admin123
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-amber-700 group-hover:translate-x-0.5 transition-transform">
+                  Instant Access →
+                </span>
+              </button>
             </div>
           </div>
         </div>
