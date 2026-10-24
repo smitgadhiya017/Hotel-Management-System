@@ -214,8 +214,8 @@ app.post('/api/supabase/entity', async (req, res) => {
 // ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Catch-all: serve index.html for React Router
-app.get('*', (req, res) => {
+// Catch-all: serve index.html for React Router (Express 5 requires named wildcard)
+app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
